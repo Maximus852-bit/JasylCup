@@ -189,6 +189,7 @@ const socket = new WebSocket(
                     if (socket.readyState === WebSocket.OPEN) {
                         socket.send(JSON.stringify({ type: 'qrCode', data: qrCodeMessage }));
                         console.log(`Данные отправлены на сервер: ${qrCodeMessage}`);
+                        
                     } else {
                         console.error('WebSocket соединение не установлено.');
                     }
@@ -196,7 +197,11 @@ const socket = new WebSocket(
                     // Скрываем сканер и показываем галочку
                     document.getElementById('scanner-container').style.display = 'none';
                     const checkmarkContainer = document.getElementById('checkmark-container');
+                    
                     checkmarkContainer.style.display = 'flex';
+                    setTimeout(() => {
+            window.location.href = 'profile.html';
+        }, 3000);
                 }
             },
             errorMessage => {
