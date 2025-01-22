@@ -14,7 +14,7 @@ const server = http.createServer((req, res) => {
     console.log(`Запрос: ${pathname}`);
 
     // Определяем путь к файлу
-    const filePath = path.join(__dirname, pathname === '/' ? 'index.html' : pathname);
+    const filePath = path.join(__dirname, pathname === '/' ? 'profile.html' : pathname);
 
     console.log(`Попытка загрузить файл: ${filePath}`);
 
