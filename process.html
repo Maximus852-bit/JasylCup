@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Process Page</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap&subset=cyrillic" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Rubik', sans-serif;
+            background: #F5F5F5; /* Светлый фон */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+            text-align: center;
+            position: relative;
+        }
+
+        .content {
+            display: flex;
+            align-items: center;
+            gap: 30px; /* Расстояние между элементами */
+            margin-bottom: 70px;
+        }
+
+        .icon {
+            width: 200px; /* Размер иконки */
+            height: 200px;
+            background-image: url('./images/cup.svg'); /* Путь к иконке */
+            background-size: cover;
+            background-position: center;
+        }
+
+        .quantity {
+            font-size: 120px; /* Размер текста количества */
+            font-weight: 700;
+            color: #333333; /* Тёмный цвет текста */
+        }
+
+        .button {
+            background-color: #3FA448; /* Зелёная кнопка */
+            color: white;
+            font-size: 48px; /* Размер шрифта кнопки */
+            font-weight: 700;
+            padding: 30px 80px; /* Отступы внутри кнопки */
+            border: none;
+            border-radius: 80px; /* Закруглённые углы */
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .button:hover {
+            transform: scale(1.1); /* Увеличение при наведении */
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3); /* Тень при наведении */
+        }
+
+        .hidden-button {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background-color: transparent;
+            border: none;
+            color: #AAAAAA; /* Еле заметный цвет */
+            font-size: 18px;
+            cursor: pointer;
+            opacity: 0.5;
+            transition: opacity 0.3s;
+        }
+
+        .hidden-button:hover {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="content">
+        <div class="icon"></div>
+        <div class="quantity" id="quantity">× 0</div>
+    </div>
+    <button id="button" class="button" onclick="finishProcess()">ЗАВЕРШИТЬ</button>
+    <button class="hidden-button" onclick="incrementQuantity()">+</button>
+
+    <script>
+        const translations = {
+            kz: {
+                button: 'ТОЛЫҚ',
+                success: 'QR-код сәтті сканерленді!'
+            },
+            ru: {
+                button: 'ЗАВЕРШИТЬ',
+                success: 'QR-код успешно отсканирован!'
+            },
+            us: {
+                button: 'FINISH',
+                success: 'QR Code scanned successfully!'
+            }
+        };
+
+        // Получение языка из URL
+        function getLanguage() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('lang') ? params.get('lang').toLowerCase() : 'us';
+        }
+
+        // Установка перевода
+        function setTranslation() {
+            const lang = getLanguage();
+            const translation = translations[lang] || translations['us'];
+            document.getElementById('button').textContent = translation.button;
+        }
+
+        // Подключение к WebSocket
+        const socket = new WebSocket('ws://localhost:8080');
+
+        socket.onopen = () => {
+            console.log('WebSocket соединение установлено.');
+        };
+
+        socket.onerror = (error) => {
+            console.error('Ошибка WebSocket:', error);
+        };
+        
+
+        // Увеличение числа
+        function incrementQuantity() {
+            const quantityElement = document.getElementById('quantity');
+            const currentText = quantityElement.textContent.trim();
+            const currentNumber = parseInt(currentText.replace('×', '').trim(), 10);
+            quantityElement.textContent = `× ${currentNumber + 1}`;
+        }
+
+        // Завершение процесса
+        function finishProcess() {
+            const quantityElement = document.getElementById('quantity');
+            const currentText = quantityElement.textContent.trim();
+            const currentNumber = parseInt(currentText.replace('×', '').trim(), 10);
+
+            // Отправляем данные на сервер через WebSocket
+            if (socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({ type: 'cups', quantity: currentNumber }));
+                console.log(`Данные отправлены на сервер: ${currentNumber}`);
+            } else {
+                console.error('WebSocket соединение не установлено.');
+            }
+            
+
+            // Переход на страницу final.html
+            window.location.href = 'final.html';
+            
+        }
+        window.onload = function () {
+            setTranslation();
+        };
+    </script>
+</body>
+</html>

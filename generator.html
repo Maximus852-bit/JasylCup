@@ -1,0 +1,182 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Generator & Receiver</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Rubik', sans-serif;
+            background: radial-gradient(circle, #66BB6A, #3FA448); /* Вернули градиент */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            height: 100vh;
+            text-align: center;
+        }
+
+        #qrcode {
+            margin-top: 20px;
+            width: 300px;
+            height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 30px;
+            background-color: #ffffff;
+            overflow: hidden;
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+            padding: 10px;
+            border: 5px solid #18601F;
+        }
+
+        h1 {
+            color: white;
+            font-size: 36px;
+            font-weight: 700;
+        }
+
+        .qr-text {
+            font-size: 48px;
+            font-weight: 900;
+            color: #FFFFFF;
+            margin-bottom: 10px;
+        }
+
+        .full-screen-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: -1;
+        }
+
+
+        .continue-button {
+    position: fixed;
+    bottom: 3%;
+    left: 11%;
+    background-color: #3FA448;
+    color: white;
+    font-size: 40px;
+    font-weight: 700;
+    padding: 40px 80px;
+    border: none;
+    border-radius: 1000px;
+    cursor: pointer;
+    transition: transform 0.3s, box-shadow 0.3s;
+    z-index: 10;
+}
+
+    .continue-button:hover {
+        transform: scale(1.1); /* Увеличение кнопки при наведении */
+        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3); /* Тень при наведении */
+    }
+    </style>
+</head>
+<body>
+    <h1 id="title"></h1>
+    <div class="qr-text" id="qr-text">7RT-H46</div>
+    <div id="qrcode"></div>
+    <div id="message"></div>
+
+    <script>
+        const translations = {
+            kz: { title: 'QR-кодты сканерлеңіз', image: 'images/inst_kaz.png', button: 'Жалғастыру'},
+            ru: { title: 'Отсканируйте QR-код', image: 'images/inst_rus.png', button: 'Продолжить'},
+            us: { title: 'Scan the QR Code', image: 'images/inst_eng.png' , button: 'Next'},
+        };
+
+        // Получение языка из параметров URL
+        function getLanguage() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('lang') || 'us';
+        }
+
+        // Установка перевода
+        function setTranslation() {
+            const lang = getLanguage().toLowerCase();
+            const translation = translations[lang] || translations['us'];
+            document.getElementById('title').textContent = translation.title;
+        }
+
+        // Генерация QR-кода
+        function generateQRCode() {
+            const data = "7RT-H46";
+            const qrCodeContainer = document.getElementById('qrcode');
+
+            qrCodeContainer.innerHTML = '';
+            const canvas = document.createElement('canvas');
+            canvas.style.borderRadius = '20px';
+            qrCodeContainer.appendChild(canvas);
+
+            QRCode.toCanvas(canvas, data, {
+                width: 280,
+                color: { dark: "#18601F", light: "#FFFFFF" },
+                margin: 1,
+            }, function (error) {
+                if (error) {
+                    console.error(error);
+                    qrCodeContainer.textContent = 'Failed to generate QR code';
+                }
+            });
+        }
+
+        // Подключение к WebSocket
+        const socket = new WebSocket('ws://localhost:8080');
+
+        socket.onopen = () => {
+            console.log('Подключение к WebSocket установлено.');
+        };
+
+        socket.onmessage = async (event) => {
+            console.log('Получено сообщение от сервера:', event.data);
+
+            try {
+                // Преобразуем Blob в текст
+                const textData = await event.data.text();
+                const data = JSON.parse(textData);
+
+                if (data.type === 'qrCode') {
+                    console.log(`QR-код от сервера: ${data.data}`);
+
+                    // Убираем весь контент и отображаем только инструкцию
+                    document.body.innerHTML = ''; // Удаляем всё содержимое
+
+                    // Получаем язык и соответствующее изображение
+                    const lang = getLanguage().toLowerCase();
+                    const translation = translations[lang] || translations['us'];
+
+                    // Создаём картинку
+                    const img = document.createElement('img');
+                    img.src = translation.image;
+                    img.alt = 'Инструкция';
+                    img.className = 'full-screen-image';
+                    document.body.appendChild(img);
+
+                    // Создаём кнопку "Продолжить"
+                    const button = document.createElement('button');
+                    button.className = 'continue-button';
+                    button.textContent = translation.button;
+                    button.onclick = () => window.location.href = 'process.html?lang=' + lang;
+                    document.body.appendChild(button);
+                }
+            } catch (error) {
+                console.error('Ошибка обработки сообщения:', error);
+            }
+        };
+
+        // Инициализация страницы
+        window.onload = function () {
+            setTranslation();
+            generateQRCode();
+        };
+    </script>
+</body>
+</html>

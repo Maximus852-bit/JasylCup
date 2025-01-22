@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Rubik', sans-serif;
+            background: #E5E5E5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        .profile-header {
+            background: #FFFFFF;
+            width: 100%;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 0 0 20px 20px;
+        }
+
+        .avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background-image: url('./images/profile/avatar.png');
+            background-size: cover;
+            background-position: center;
+            margin: 0 auto 10px;
+        }
+
+        .name {
+            font-size: 24px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            width: 90%;
+            margin: 20px 0;
+        }
+
+        .stat {
+            background: #FFFFFF;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .stat img {
+            width: 50px;
+            height: 50px;
+            margin-bottom: 10px;
+        }
+
+        .stat h2 {
+            margin: 0;
+            font-size: 36px;
+            color: #3FA448;
+        }
+
+        .stat p {
+            margin: 5px 0 0;
+            font-size: 14px;
+            color: #888;
+        }
+
+        .achievements {
+            width: 90%;
+            margin: 30px 0;
+        }
+
+        .achievements h3 {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .achievement-list {
+            display: flex;
+            gap: 20px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+        }
+
+        .achievement {
+            background: #FFFFFF;
+            border-radius: 15px;
+            padding: 20px;
+            width: 140px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .achievement img {
+            width: 70px;
+            height: 70px;
+            margin-bottom: 10px;
+        }
+
+        .achievement p {
+            margin: 5px 0 0;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .scan-button {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            cursor: pointer;
+            z-index: 1000;
+        }
+
+        .scan-button img {
+            width: 100px;
+            height: 100px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Profile Header -->
+    <div class="profile-header">
+        <div class="avatar"></div>
+        <div class="name" id="profile-name">Yan Kudashov</div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-container">
+        <div class="stat">
+            <img src="./images/profile/cup.png" alt="Total Cups">
+            <h2 id="total-cups">52</h2>
+            <p id="total-cups-text">Total cups</p>
+        </div>
+        <div class="stat">
+            <img src="./images/profile/coin.png" alt="EcoCoins">
+            <h2 id="eco-coins">480</h2>
+            <p id="eco-coins-text">EcoCoins</p>
+        </div>
+        <div class="stat">
+            <img src="./images/profile/cardboard.png" alt="Cardboard Cups">
+            <h2 id="cardboard-cups">47</h2>
+            <p id="cardboard-cups-text">Cardboard cups</p>
+        </div>
+        <div class="stat">
+            <img src="./images/profile/plastic.png" alt="Plastic Cups">
+            <h2 id="plastic-cups">5</h2>
+            <p id="plastic-cups-text">Plastic cups</p>
+        </div>
+    </div>
+
+    <!-- Achievements -->
+    <div class="achievements">
+        <h3 id="achievements-title">Achievements</h3>
+        <div class="achievement-list">
+            <div class="achievement">
+                <img src="./images/profile/bronze.png" alt="Bronze Badge">
+                <p>5 cups</p>
+                <p id="bronze-certified-text">Bronze Certified</p>
+            </div>
+            <div class="achievement">
+                <img src="./images/profile/silver.png" alt="Silver Badge">
+                <p>50 cups</p>
+                <p id="silver-certified-text">Silver Certified</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scan Button -->
+    <div class="scan-button">
+        <a id="scanner-link">
+            <img src="./images/profile/scan-button.png" alt="Scan Button">
+        </a>
+    </div>
+
+    <script>
+const socket = new WebSocket('ws://localhost:8080');
+
+// Обработка получения данных
+socket.onmessage = async (event) => {
+    try {
+        // Преобразуем Blob в текст
+        const textData = await event.data.text();
+        const data = JSON.parse(textData); // Парсим полученные данные
+
+        if (data.type === 'cups') {
+            // Получаем текущие значения
+            const currentCups = parseInt(document.getElementById('total-cups').textContent, 10) || 0;
+            const currentEcoCoins = parseInt(document.getElementById('eco-coins').textContent, 10) || 0;
+            const currentcardboard = parseInt(document.getElementById('cardboard-cups').textContent, 10) || 0;
+
+            // Добавляем новые значения
+            const newCups = currentCups + data.quantity;
+            const newEcoCoins = currentEcoCoins + data.quantity * 10;
+            const newCard = currentcardboard + data.quantity;
+
+
+            // Обновляем значения на странице
+            document.getElementById('total-cups').textContent = newCups;
+            document.getElementById('eco-coins').textContent = newEcoCoins;
+            
+            document.getElementById('cardboard-cups').textContent = newCard;
+        
+        }
+    } catch (error) {
+        console.error('Ошибка обработки сообщения:', error);
+    }
+};
+
+// Обработка ошибок WebSocket
+socket.onerror = (error) => {
+    console.error('Ошибка WebSocket:', error);
+};
+
+// Обработка закрытия соединения
+socket.onclose = () => {
+    console.warn('Соединение WebSocket закрыто.');
+};
+
+        // Получение параметра lang из URL
+        function getLangFromURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('lang') || 'en'; // По умолчанию "en"
+        }
+
+        // Переводы для трех языков
+        const translations = {
+            en: {
+                totalCups: 'Total cups',
+                ecoCoins: 'EcoCoins',
+                cardboardCups: 'Cardboard cups',
+                plasticCups: 'Plastic cups',
+                achievements: 'Achievements',
+                bronzeCertified: 'Bronze Certified',
+                silverCertified: 'Silver Certified',
+            },
+            RU: {
+                totalCups: 'Всего стаканов',
+                ecoCoins: 'EcoCoins',
+                cardboardCups: 'Картонные стаканы',
+                plasticCups: 'Пластиковые стаканы',
+                achievements: 'Достижения',
+                bronzeCertified: 'Бронзовый сертификат',
+                silverCertified: 'Серебряный сертификат',
+            },
+            kz: {
+                totalCups: 'Жалпы стақандар',
+                ecoCoins: 'EcoCoins',
+                cardboardCups: 'Картон стақандар',
+                plasticCups: 'Пластик стақандар',
+                achievements: 'Жетістіктер',
+                bronzeCertified: 'Қола сертификат',
+                silverCertified: 'Күміс сертификат',
+            },
+        };
+
+        // Применение перевода
+        const lang = getLangFromURL();
+        const texts = translations[lang] || translations.en;
+
+        document.getElementById('total-cups-text').textContent = texts.totalCups;
+        document.getElementById('eco-coins-text').textContent = texts.ecoCoins;
+        document.getElementById('cardboard-cups-text').textContent = texts.cardboardCups;
+        document.getElementById('plastic-cups-text').textContent = texts.plasticCups;
+        document.getElementById('achievements-title').textContent = texts.achievements;
+        document.getElementById('bronze-certified-text').textContent = texts.bronzeCertified;
+        document.getElementById('silver-certified-text').textContent = texts.silverCertified;
+
+        // Обновление ссылки на scanner.html с передачей языка
+        document.getElementById('scanner-link').href = `scanner.html?lang=${lang}`;
+    </script>
+</body>
+</html>

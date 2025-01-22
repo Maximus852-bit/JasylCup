@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Scanner</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Rubik', sans-serif;
+            background: radial-gradient(circle, #66BB6A, #3FA448);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            position: relative;
+        }
+
+        .container {
+            text-align: center;
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .scanner {
+            width: 90%;
+            max-width: 400px;
+            height: 400px;
+            border: 5px dashed white;
+            border-radius: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            background-color: rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .instructions {
+            margin-top: 20px;
+            color: white;
+            font-size: 18px;
+            text-align: center;
+        }
+
+        .checkmark-container {
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            animation: fadeIn 1s forwards;
+        }
+
+        .checkmark {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background-color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .checkmark svg {
+            width: 60px;
+            height: 60px;
+            stroke: #66BB6A;
+            stroke-width: 6;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+            animation: draw 0.5s ease-in-out forwards;
+        }
+
+        @keyframes draw {
+            from {
+                stroke-dasharray: 0 100;
+            }
+            to {
+                stroke-dasharray: 100 0;
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .message {
+            margin-top: 20px;
+            font-size: 24px;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="scanner-container">
+            <div class="scanner" id="scanner">
+                <video id="preview" style="width: 100%; height: 100%;"></video>
+            </div>
+            <div class="instructions" id="instructions">Наведите камеру на QR-код</div>
+        </div>
+        <div id="checkmark-container" class="checkmark-container">
+            <div class="checkmark">
+                <svg viewBox="0 0 52 52">
+                    <path d="M14 27l9 9L38 17"></path>
+                </svg>
+            </div>
+            <div class="message" id="message">QR-код успешно отсканирован!</div>
+        </div>
+    </div>
+
+    <script>
+        // Переводы
+        const translations = {
+            kz: {
+                instructions: 'QR-кодты сканерлеңіз',
+                success: 'QR-код сәтті сканерленді!'
+            },
+            ru: {
+                instructions: 'Наведите камеру на QR-код',
+                success: 'QR-код успешно отсканирован!'
+            },
+            us: {
+                instructions: 'Point the camera at the QR Code',
+                success: 'QR Code scanned successfully!'
+            }
+        };
+
+        // Получение языка из URL
+        function getLanguage() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('lang') ? params.get('lang').toLowerCase() : 'us';
+        }
+
+        // Установка перевода
+        function setTranslation() {
+            const lang = getLanguage();
+            const translation = translations[lang] || translations['us'];
+            document.getElementById('instructions').textContent = translation.instructions;
+            document.getElementById('message').textContent = translation.success;
+        }
+
+        // Подключение к WebSocket серверу
+        const socket = new WebSocket('ws://localhost:8080');
+        let hasSentMessage = false; // Флаг для отслеживания отправки данных
+
+        socket.onopen = () => {
+            console.log('Подключение к WebSocket установлено.');
+        };
+
+        socket.onerror = (error) => {
+            console.error('Ошибка WebSocket:', error);
+        };
+
+        // Запуск сканера
+        const qrScanner = new Html5Qrcode("scanner");
+
+        qrScanner.start(
+            { facingMode: "environment" }, // Камера по умолчанию
+            {
+                fps: 10,    // Частота сканирования
+                qrbox: 250  // Размер области для сканирования
+            },
+            qrCodeMessage => {
+                console.log(`QR-код найден: ${qrCodeMessage}`);
+
+                if (!hasSentMessage) { // Проверяем, отправлялись ли данные ранее
+                    hasSentMessage = true;
+
+                    // Отправляем данные на сервер через WebSocket
+                    if (socket.readyState === WebSocket.OPEN) {
+                        socket.send(JSON.stringify({ type: 'qrCode', data: qrCodeMessage }));
+                        console.log(`Данные отправлены на сервер: ${qrCodeMessage}`);
+                    } else {
+                        console.error('WebSocket соединение не установлено.');
+                    }
+
+                    // Скрываем сканер и показываем галочку
+                    document.getElementById('scanner-container').style.display = 'none';
+                    const checkmarkContainer = document.getElementById('checkmark-container');
+                    checkmarkContainer.style.display = 'flex';
+                }
+            },
+            errorMessage => {
+                console.log(`Ошибка сканирования: ${errorMessage}`);
+            }
+        ).catch(err => console.error("Ошибка запуска сканера", err));
+
+        // Инициализация страницы
+        window.onload = function () {
+            setTranslation();
+        };
+    </script>
+</body>
+</html>
