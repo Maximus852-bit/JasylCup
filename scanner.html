@@ -156,7 +156,10 @@
         }
 
         // Подключение к WebSocket серверу
-        const socket = new WebSocket('ws://localhost:8080');
+        const isLocal = window.location.hostname === 'localhost';
+const socket = new WebSocket(
+    isLocal ? 'ws://localhost:8080' : `wss://${window.location.host}`
+);
         let hasSentMessage = false; // Флаг для отслеживания отправки данных
 
         socket.onopen = () => {

@@ -189,7 +189,10 @@
     </div>
 
     <script>
-const socket = new WebSocket('ws://localhost:8080');
+const isLocal = window.location.hostname === 'localhost';
+const socket = new WebSocket(
+    isLocal ? 'ws://localhost:8080' : `wss://${window.location.host}`
+);
 
 // Обработка получения данных
 socket.onmessage = async (event) => {
