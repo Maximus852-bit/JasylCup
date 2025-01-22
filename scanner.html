@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QR Code Scanner</title>
     <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@latest/minified/html5-qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         body {
             margin: 0;
@@ -110,7 +110,8 @@
     <div class="container">
         <div id="scanner-container">
             <div class="scanner" id="scanner">
-                <video id="preview" style="width: 100%; height: 100%;"></video>
+                <div id="reader" width="100%"></div>
+                <!-- <video id="preview" style="width: 100%; height: 100%;"></video> -->
             </div>
             <div class="instructions" id="instructions">Наведите камеру на QR-код</div>
         </div>
@@ -177,7 +178,6 @@ const socket = new WebSocket(
             { facingMode: "environment" }, // Камера по умолчанию
             {
                 fps: 10,    // Частота сканирования
-                qrbox: 250  // Размер области для сканирования
             },
             qrCodeMessage => {
                 console.log(`QR-код найден: ${qrCodeMessage}`);
