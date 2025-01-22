@@ -81,6 +81,6 @@ wss.on('connection', (ws) => {
 });
 
 // Запускаем сервер
-server.listen(8080, () => {
+server.listen(4124, () => {
     console.log('Сервер запущен на http://localhost:8080');
 });

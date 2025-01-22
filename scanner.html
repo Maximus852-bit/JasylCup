@@ -159,7 +159,7 @@
         // Подключение к WebSocket серверу
         const isLocal = window.location.hostname === 'localhost';
 const socket = new WebSocket(
-    isLocal ? 'ws://localhost:8080' : `wss://${window.location.host}`
+    isLocal ? 'ws://localhost:8080' : `ws://${window.location.host}`
 );
         let hasSentMessage = false; // Флаг для отслеживания отправки данных
 
